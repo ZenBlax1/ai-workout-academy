@@ -1,0 +1,470 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Workout Academy</title>
+  <!-- Include Tailwind CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #d1d5db, #9ca3af); /* Sleek grey gradient */
+    }
+    /* Custom button animations */
+    .custom-btn {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s ease; /* Smoother transition */
+      transform: perspective(1px) translateZ(0);
+      border-radius: 50px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 1.5rem 3rem; /* Larger buttons */
+      font-size: 1.125rem;
+    }
+    .custom-btn:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+    }
+    .custom-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .custom-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+      );
+      transition: 0.6s; /* Smoother shine effect */
+    }
+    .custom-btn:hover::before {
+      left: 100%;
+    }
+    /* Button colors */
+    .btn-nav {
+      background-color: #3b82f6; /* Unified blue for nav buttons */
+      color: white;
+    }
+    .btn-nav:hover {
+      background-color: #2563eb;
+    }
+    .btn-enroll {
+      background-color: #ef4444; /* Red for enroll */
+      color: white;
+      padding: 1.75rem 3.5rem;
+      font-size: 1.25rem;
+    }
+    .btn-enroll:hover {
+      background-color: #dc2626;
+    }
+    /* Fade-in animation for sections */
+    .section {
+      opacity: 0;
+      transform: translateY(30px);
+      animation: fadeIn 1s ease forwards; /* Smoother fade-in */
+    }
+    @keyframes fadeIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Enhanced pop-out elements */
+    .card {
+      transition: transform 0.5s ease, box-shadow 0.5s ease; /* Smoother card hover */
+      border-radius: 20px;
+    }
+    .card:hover {
+      transform: translateY(-12px);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
+    }
+    /* Hero overlay */
+    .hero-overlay {
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.5));
+    }
+    /* Testimonial slider */
+    .testimonial-slider {
+      overflow: hidden;
+      position: relative;
+    }
+    .testimonial-slide {
+      transition: transform 0.7s ease; /* Smoother slider transition */
+    }
+    /* Countdown timer */
+    .countdown {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      color: #fef3c7;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-gray-900">
+  <!-- Header -->
+  <header class="bg-white shadow-2xl sticky top-0 z-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-gray-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg">AI</div>
+        <div>
+          <h1 class="text-3xl font-extrabold tracking-tight">AI Workout Academy</h1>
+          <p class="text-base text-gray-600">Your 8-week AI-powered transformation awaits</p>
+        </div>
+      </div>
+      <nav class="flex items-center gap-4">
+        <button onclick="showSection('home')" class="custom-btn btn-nav">Home</button>
+        <button onclick="showSection('generator')" class="custom-btn btn-nav">Workout Generator</button>
+        <button onclick="showSection('features')" class="custom-btn btn-nav">Features</button>
+        <button onclick="showSection('checkout')" class="custom-btn btn-enroll">Enroll Now</button>
+        <button onclick="showSection('member')" class="custom-btn btn-nav">Member Area</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-24">
+    <!-- Home Section -->
+    <section id="home" class="section">
+      <div class="relative rounded-3xl overflow-hidden shadow-2xl">
+        <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1920&q=80" alt="Workout hero" class="w-full h-[600px] object-cover">
+        <div class="absolute inset-0 hero-overlay flex items-center justify-center text-center p-12">
+          <div class="bg-white bg-opacity-95 rounded-2xl p-12 shadow-2xl max-w-3xl">
+            <h2 class="text-5xl sm:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">Redefine Your Fitness with AI</h2>
+            <p class="text-xl text-gray-700 mb-8 leading-relaxed">Join over 10,000 members transforming their bodies with our AI-optimized 8-week program. Act now – this exclusive offer won't last!</p>
+            <button onclick="showSection('checkout')" class="custom-btn btn-enroll shadow-2xl">Start Now — $48</button>
+            <p class="mt-6 text-lg countdown" id="countdown">Hurry! Offer ends in <span id="timer">23:59:59</span></p>
+          </div>
+        </div>
+      </div>
+      <!-- Benefits Section -->
+      <div class="mt-16 space-y-12">
+        <h2 class="text-4xl font-extrabold text-center text-gray-100">Why Settle for Less?</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="card bg-white p-8 rounded-2xl shadow-md">
+            <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80" alt="Strength" class="w-full h-60 object-cover rounded-xl mb-6">
+            <h3 class="text-2xl font-bold mb-4">Unmatched Strength</h3>
+            <p class="text-gray-600 leading-relaxed">Build a powerful physique with AI-driven muscle targeting for optimal gains.</p>
+          </div>
+          <div class="card bg-white p-8 rounded-2xl shadow-md">
+            <img src="https://images.unsplash.com/photo-1549060279-7e168f559416?auto=format&fit=crop&w=600&q=80" alt="Endurance" class="w-full h-60 object-cover rounded-xl mb-6">
+            <h3 class="text-2xl font-bold mb-4">Boundless Stamina</h3>
+            <p class="text-gray-600 leading-relaxed">Crush fatigue with smart cardio plans tailored to your unique capacity.</p>
+          </div>
+          <div class="card bg-white p-8 rounded-2xl shadow-md">
+            <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=600&q=80" alt="Transformation" class="w-full h-60 object-cover rounded-xl mb-6">
+            <h3 class="text-2xl font-bold mb-4">Total Transformation</h3>
+            <p class="text-gray-600 leading-relaxed">See jaw-dropping results in 8 weeks with real-time progress tracking.</p>
+          </div>
+        </div>
+        <div class="text-center mt-12">
+          <p class="text-2xl font-bold text-gray-100 mb-4">Trusted by 10,000+ Members | 30-Day Money-Back Guarantee</p>
+          <button onclick="showSection('checkout')" class="custom-btn btn-enroll shadow-2xl">Secure Your Spot — $48</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Workout Generator Section -->
+    <section id="generator" class="section" style="display:none;">
+      <h2 class="text-4xl font-extrabold text-center text-gray-100 mb-8">Your Custom Workout in Seconds</h2>
+      <p class="text-xl text-gray-200 text-center max-w-3xl mx-auto mb-12 leading-relaxed">Preview our AI-powered workout generator. Unlock unlimited plans with your membership!</p>
+      <div class="max-w-4xl mx-auto bg-white p-10 rounded-2xl shadow-2xl">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
+          <div>
+            <label for="muscle-group" class="block text-base font-medium text-gray-700 mb-2">Target Muscle Group</label>
+            <select id="muscle-group" class="border border-gray-300 p-4 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-red-500 transition">
+              <option value="chest">Chest</option>
+              <option value="back">Back</option>
+              <option value="legs">Legs</option>
+              <option value="arms">Arms</option>
+              <option value="core">Core</option>
+            </select>
+          </div>
+          <div>
+            <label for="equipment" class="block text-base font-medium text-gray-700 mb-2">Available Equipment</label>
+            <select id="equipment" class="border border-gray-300 p-4 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-red-500 transition">
+              <option value="bodyweight">Bodyweight</option>
+              <option value="dumbbells">Dumbbells</option>
+              <option value="barbell">Barbell</option>
+              <option value="resistance-bands">Resistance Bands</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="generateWorkout()" class="custom-btn btn-enroll w-full shadow-2xl">Generate Your Workout</button>
+        <div id="workout-result" class="mt-8 p-6 bg-gray-50 rounded-xl text-gray-700">
+          <p class="text-center">Your personalized workout will appear here. Try it now!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="section" style="display:none;">
+      <h2 class="text-4xl font-extrabold text-center text-gray-100 mb-8">Why We're the Best Choice</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="card bg-white p-8 rounded-2xl shadow-md">
+          <img src="https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=600&q=80" alt="AI personalization" class="w-full h-60 object-cover rounded-xl mb-6">
+          <h3 class="text-2xl font-bold mb-4">AI-Powered Precision</h3>
+          <p class="text-gray-600 leading-relaxed">Workouts that adapt to you, maximizing results with cutting-edge AI.</p>
+        </div>
+        <div class="card bg-white p-8 rounded-2xl shadow-md">
+          <img src="https://images.unsplash.com/photo-1517838277536-f5f99be4e8b8?auto=format&fit=crop&w=600&q=80" alt="Expert guidance" class="w-full h-60 object-cover rounded-xl mb-6">
+          <h3 class="text-2xl font-bold mb-4">Elite Coaching</h3>
+          <p class="text-gray-600 leading-relaxed">Pro trainers + AI feedback ensure perfect form and faster progress.</p>
+        </div>
+        <div class="card bg-white p-8 rounded-2xl shadow-md">
+          <img src="https://images.unsplash.com/photo-1549060279-7e168f559416?auto=format&fit=crop&w=600&q=80" alt="Community support" class="w-full h-60 object-cover rounded-xl mb-6">
+          <h3 class="text-2xl font-bold mb-4">Unrivaled Community</h3>
+          <p class="text-gray-600 leading-relaxed">Join a global network of fitness enthusiasts for endless motivation.</p>
+        </div>
+      </div>
+      <div class="text-center mt-12">
+        <p class="text-2xl font-bold text-gray-100 mb-4">Recommended: Add our AI Nutrition Planner for 2x Results!</p>
+      </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="section testimonial-slider">
+      <h2 class="text-4xl font-extrabold text-center text-gray-100 mb-8">Transformations That Inspire</h2>
+      <div class="relative max-w-6xl mx-auto">
+        <div class="testimonial-slide grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div class="card bg-white p-8 rounded-2xl shadow-md text-center">
+            <img src="https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80" alt="Testimonial 1" class="w-24 h-24 rounded-full mx-auto mb-6 object-cover shadow-md">
+            <p class="text-gray-600 italic text-lg mb-4">"Dropped 25lbs and gained confidence I never knew I had!"</p>
+            <p class="text-base font-bold text-gray-800">— Sarah T., Verified Member</p>
+          </div>
+          <div class="card bg-white p-8 rounded-2xl shadow-md text-center">
+            <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80" alt="Testimonial 2" class="w-24 h-24 rounded-full mx-auto mb-6 object-cover shadow-md">
+            <p class="text-gray-600 italic text-lg mb-4">"The AI plans are so easy to follow. I'm hooked!"</p>
+            <p class="text-base font-bold text-gray-800">— Mike R., Verified Member</p>
+          </div>
+          <div class="card bg-white p-8 rounded-2xl shadow-md text-center">
+            <img src="https://images.unsplash.com/photo-1571019614242-03c46bcdf53c?auto=format&fit=crop&w=600&q=80" alt="Testimonial 3" class="w-24 h-24 rounded-full mx-auto mb-6 object-cover shadow-md">
+            <p class="text-gray-600 italic text-lg mb-4">"Worth every dollar. Professional and life-changing."</p>
+            <p class="text-base font-bold text-gray-800">— Emily W., Verified Member</p>
+          </div>
+          <div class="card bg-white p-8 rounded-2xl shadow-md text-center">
+            <img src="https://images.unsplash.com/photo-1549476464-37392f717541?auto=format&fit=crop&w=600&q=80" alt="Testimonial 4" class="w-24 h-24 rounded-full mx-auto mb-6 object-cover shadow-md">
+            <p class="text-gray-600 italic text-lg mb-4">"From zero to hero in 8 weeks. Unreal results!"</p>
+            <p class="text-base font-bold text-gray-800">— John D., Verified Member</p>
+          </div>
+          <div class="card bg-white p-8 rounded-2xl shadow-md text-center">
+            <img src="https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=600&q=80" alt="Testimonial 5" class="w-24 h-24 rounded-full mx-auto mb-6 object-cover shadow-md">
+            <p class="text-gray-600 italic text-lg mb-4">"The community pushed me to keep going. Best decision ever."</p>
+            <p class="text-base font-bold text-gray-800">— Lisa K., Verified Member</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Checkout Section -->
+    <section id="checkout" class="section" style="display:none;">
+      <div class="max-w-lg mx-auto bg-white p-12 rounded-2xl shadow-2xl">
+        <h2 class="text-3xl font-extrabold text-center text-gray-900 mb-4">Join the Elite Today</h2>
+        <p class="text-gray-600 text-center mb-8 text-lg">Transform your life with a program trusted by thousands. 100% Risk-Free.</p>
+        <div class="space-y-6">
+          <input id="name" placeholder="Your Full Name" class="border border-gray-300 p-4 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-red-500 transition">
+          <input id="email" placeholder="Your Email Address" class="border border-gray-300 p-4 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-red-500 transition">
+          <button onclick="handlePurchase()" class="custom-btn btn-enroll w-full shadow-2xl">Enroll Securely — $48</button>
+          <button onclick="showSection('home')" class="custom-btn btn-nav w-full shadow-md">Return to Home</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Member Area Section -->
+    <section id="member" class="section" style="display:none;">
+      <div class="text-center max-w-4xl mx-auto">
+        <h3 class="text-3xl font-extrabold text-gray-100 mb-6">Your Exclusive Member Portal</h3>
+        <p class="text-xl text-gray-200 mb-8 leading-relaxed">Unlock premium tools, track your progress, and join a community of winners. Your journey starts now.</p>
+        <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=600&q=80" alt="Member workout" class="w-full max-w-2xl mx-auto rounded-2xl shadow-2xl mb-12">
+        <div class="space-y-6">
+          <h4 class="text-2xl font-bold mb-4 text-gray-100">Pro Tips for Success</h4>
+          <ul class="text-left max-w-xl mx-auto text-gray-200 text-lg space-y-4">
+            <li class="flex items-start"><span class="text-red-400 mr-2">•</span>Nutrition Secrets: 5 Hacks to Supercharge Your Gains</li>
+            <li class="flex items-start"><span class="text-red-400 mr-2">•</span>Motivation Mastery: Stay Committed with Proven Strategies</li>
+            <li class="flex items-start"><span class="text-red-400 mr-2">•</span>Plateau Breakers: AI-Driven Techniques for Non-Stop Progress</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white mt-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div>
+          <h3 class="text-2xl font-bold mb-4">AI Workout Academy</h3>
+          <p class="text-gray-300 text-base leading-relaxed">The future of fitness is here. Join the revolution with AI-driven results.</p>
+        </div>
+        <div>
+          <h3 class="text-2xl font-bold mb-4">Navigation</h3>
+          <ul class="space-y-3 text-base text-gray-300">
+            <li><a href="#" onclick="showSection('home')" class="hover:text-white transition">Home</a></li>
+            <li><a href="#" onclick="showSection('generator')" class="hover:text-white transition">Workout Generator</a></li>
+            <li><a href="#" onclick="showSection('features')" class="hover:text-white transition">Features</a></li>
+            <li><a href="#" onclick="showSection('checkout')" class="hover:text-white transition">Enroll</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-2xl font-bold mb-4">Get in Touch</h3>
+          <p class="text-gray-300 text-base">Email: support@aiworkoutacademy.com</p>
+          <p class="text-gray-300 text-base mt-2">Phone: (123) 456-7890</p>
+        </div>
+      </div>
+      <div class="mt-12 pt-8 border-t border-gray-800 text-center text-base text-gray-400">
+        © 2025 AI Workout Academy. All rights reserved. | <a href="#" class="hover:text-white">Privacy Policy</a> | <a href="#" class="hover:text-white">Terms of Service</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function showSection(id) {
+      const sections = ['home', 'generator', 'features', 'checkout', 'member'];
+      sections.forEach(section => {
+        document.getElementById(section).style.display = 'none';
+      });
+      document.getElementById(id).style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function handlePurchase() {
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      if (!name || !email) {
+        alert('Please provide your name and email to proceed.');
+        return;
+      }
+      window.open("https://gumroad.com/l/your-product-id", "_blank");
+      alert("Congratulations on enrolling! Access your member area now.");
+      showSection('member');
+    }
+
+    function generateWorkout() {
+      const muscleGroup = document.getElementById('muscle-group').value;
+      const equipment = document.getElementById('equipment').value;
+      const resultDiv = document.getElementById('workout-result');
+      
+      const exercises = {
+        chest: {
+          bodyweight: ['Push-Ups: 3 sets of 15 reps', 'Diamond Push-Ups: 3 sets of 12 reps', 'Decline Push-Ups: 3 sets of 10 reps'],
+          dumbbells: ['Dumbbell Bench Press: 3 sets of 12 reps', 'Dumbbell Flyes: 3 sets of 10 reps', 'Incline Dumbbell Press: 4 sets of 8 reps'],
+          barbell: ['Barbell Bench Press: 3 sets of 10 reps', 'Incline Barbell Press: 3 sets of 8 reps', 'Decline Barbell Press: 4 sets of 6 reps'],
+          'resistance-bands': ['Banded Push-Ups: 3 sets of 12 reps', 'Banded Chest Flyes: 3 sets of 10 reps', 'Banded Chest Press: 4 sets of 8 reps']
+        },
+        back: {
+          bodyweight: ['Superman: 3 sets of 15 reps', 'Bird Dog: 3 sets of 12 reps', 'Inverted Rows: 3 sets of 10 reps'],
+          dumbbells: ['Dumbbell Rows: 3 sets of 12 reps', 'Dumbbell Pullovers: 3 sets of 10 reps', 'Single-Arm Dumbbell Rows: 4 sets of 8 reps'],
+          barbell: ['Barbell Bent-Over Rows: 3 sets of 10 reps', 'Barbell Deadlifts: 3 sets of 8 reps', 'Barbell Shrugs: 4 sets of 6 reps'],
+          'resistance-bands': ['Banded Rows: 3 sets of 12 reps', 'Banded Face Pulls: 3 sets of 10 reps', 'Banded Pull-Aparts: 4 sets of 8 reps']
+        },
+        legs: {
+          bodyweight: ['Bodyweight Squats: 3 sets of 15 reps', 'Lunges: 3 sets of 12 reps', 'Calf Raises: 3 sets of 10 reps'],
+          dumbbells: ['Dumbbell Squats: 3 sets of 12 reps', 'Dumbbell Lunges: 3 sets of 10 reps', 'Dumbbell Calf Raises: 4 sets of 8 reps'],
+          barbell: ['Barbell Squats: 3 sets of 10 reps', 'Barbell Lunges: 3 sets of 8 reps', 'Barbell Deadlifts: 4 sets of 6 reps'],
+          'resistance-bands': ['Banded Squats: 3 sets of 12 reps', 'Banded Lunges: 3 sets of 10 reps', 'Banded Calf Raises: 4 sets of 8 reps']
+        },
+        arms: {
+          bodyweight: ['Dips: 3 sets of 15 reps', 'Diamond Push-Ups: 3 sets of 12 reps', 'Tricep Dips: 3 sets of 10 reps'],
+          dumbbells: ['Dumbbell Bicep Curls: 3 sets of 12 reps', 'Dumbbell Tricep Extensions: 3 sets of 10 reps', 'Dumbbell Hammer Curls: 4 sets of 8 reps'],
+          barbell: ['Barbell Bicep Curls: 3 sets of 10 reps', 'Barbell Tricep Extensions: 3 sets of 8 reps', 'Barbell Skull Crushers: 4 sets of 6 reps'],
+          'resistance-bands': ['Banded Bicep Curls: 3 sets of 12 reps', 'Banded Tricep Pushdowns: 3 sets of 10 reps', 'Banded Hammer Curls: 4 sets of 8 reps']
+        },
+        core: {
+          bodyweight: ['Planks: 3 sets of 30 seconds', 'Bicycle Crunches: 3 sets of 12 reps', 'Leg Raises: 3 sets of 10 reps'],
+          dumbbells: ['Dumbbell Russian Twists: 3 sets of 12 reps', 'Dumbbell Crunches: 3 sets of 10 reps', 'Dumbbell Side Bends: 4 sets of 8 reps'],
+          barbell: ['Barbell Rollouts: 3 sets of 10 reps', 'Barbell Russian Twists: 3 sets of 8 reps', 'Barbell Side Bends: 4 sets of 6 reps'],
+          'resistance-bands': ['Banded Russian Twists: 3 sets of 12 reps', 'Banded Crunches: 3 sets of 10 reps', 'Banded Side Bends: 4 sets of 8 reps']
+        }
+      };
+
+      const selectedExercises = exercises[muscleGroup][equipment] || ['No exercises found for this combination.'];
+
+      resultDiv.innerHTML = `
+        <h3 class="text-2xl font-bold mb-4 text-gray-900">Your ${muscleGroup.charAt(0).toUpperCase() + muscleGroup.slice(1)} Workout</h3>
+        <p class="mb-6 text-gray-600">Equipment: ${equipment.charAt(0).toUpperCase() + equipment.slice(1)}</p>
+        <ul class="space-y-4 text-gray-700">
+          ${selectedExercises.map(ex => `<li class="flex items-center"><span class="text-red-600 mr-2">•</span>${ex}</li>`).join('')}
+        </ul>
+        <p class="mt-8 text-gray-600 font-bold text-center">This is a preview. Join for full programs, video guides, and more!</p>
+      `;
+    }
+
+    // Countdown timer
+    function startCountdown() {
+      const timer = document.getElementById('timer');
+      let timeLeft = 24 * 60 * 60 - 1; // 24 hours in seconds
+      setInterval(() => {
+        if (timeLeft <= 0) timeLeft = 24 * 60 * 60;
+        const hours = Math.floor(timeLeft / 3600);
+        const minutes = Math.floor((timeLeft % 3600) / 60);
+        const seconds = timeLeft % 60;
+        timer.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        timeLeft--;
+      }, 1000);
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      showSection('home');
+      startCountdown();
+      slideTestimonials();
+    });
+
+    // Testimonial slider
+    let slideIndex = 0;
+    function slideTestimonials() {
+      const slides = document.querySelectorAll('.testimonial-slide > div');
+      const visibleCount = window.innerWidth < 640 ? 1 : window.innerWidth < 1024 ? 2 : 3;
+      slides.forEach((slide, index) => {
+        slide.style.display = (index >= slideIndex && index < slideIndex + visibleCount) ? 'block' : 'none';
+      });
+      slideIndex = (slideIndex + visibleCount >= slides.length) ? 0 : slideIndex + visibleCount;
+    }
+    setInterval(slideTestimonials, 4000);
+  </script>
+</body>
+</html>
